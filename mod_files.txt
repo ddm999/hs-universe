@@ -1,0 +1,19 @@
+# NOTE: any file that's _ever_ been changed needs to be here, because no history is saved
+
+# mod scripts
+mod_run.py
+mod_update.py
+
+# textual files
+boot.cfg
+locale/locale.xml
+res/license/eula.txt
+res/license/tos.txt
+
+# images
+res/textures/minifig/minifigtorsos/torsos_rewards_bradfordrant_i5.dds
+res/textures/minifig/minifigtorsos/torsos_rewards_minifigarm_i5.dds
+
+#TODO
+res/textures/ui/inventory/torsos/bradford_rant.dds
+res/textures/ui/inventory/torsos/reward/m73200_minifigarm.dds

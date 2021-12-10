@@ -1,0 +1,13 @@
+# setup whitelist
+*
+!*/
+
+# allow specific files
+!.gitignore
+!mod_*
+!dev/*
+
+# actual blacklist stuff
+mod/*
+res/*
+*.pyc
