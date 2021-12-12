@@ -3,4 +3,4 @@ import os, subprocess
 import mod_update
 
 mod_update.main()
-subprocess.Popen(os.getcwd()+"\legouniverse.exe")
+subprocess.Popen(os.getcwd()+"/legouniverse.exe")

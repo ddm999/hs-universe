@@ -8,6 +8,7 @@
 !dev/*
 
 # actual blacklist stuff
+bak/*
 mod/*
 res/*
 *.pyc
