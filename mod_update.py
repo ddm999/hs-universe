@@ -1,11 +1,15 @@
 #!/usr/bin/python3
-import os, shutil, traceback, hashlib, stat, ssl, urllib.request
-import argparse
 
-# i vomit every time i write this
-TYPING = False
-if TYPING:
-    from typing import List
+from __future__ import annotations
+
+import argparse
+import hashlib
+import os
+import shutil
+import ssl
+import stat
+import traceback
+import urllib.request
 
 BASEURL = "https://runciman.hacksoc.org/~/ddm/mod/"
 FILELIST = BASEURL+"modfilelist.txt"
@@ -50,7 +54,7 @@ def main() -> int:
         local_lines = ["0",""]
 
     ret = urllib.request.urlopen(FILELIST, context=sslcontext)
-    net_lines = [line+"\n" for line in ret.read().decode("utf-8").split("\n")] # type: List[str]
+    net_lines: list[str] = [line+"\n" for line in ret.read().decode("utf-8").split("\n")]
 
     local_rev = int(local_lines[0].strip("\r\n"))
     net_rev = int(net_lines[0].strip("\r\n"))
