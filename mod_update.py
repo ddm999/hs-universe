@@ -4,34 +4,32 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import logging
 import os
 import shutil
 import ssl
 import stat
 import sys
 import urllib.request
-import logging as log
 from pathlib import Path
 
 BASEURL = "https://runciman.hacksoc.org/~/ddm/mod/"
 FILELIST = BASEURL+"modfilelist.txt"
-VERBOSITY = log.INFO
-FORCE = False
-SKIPREV = False
-NOMOD = False
 MODFILELIST_PATH = Path("modfilelist.txt")
 BACKUP_DIR = Path("bak/")
 
 
-log.basicConfig(
-    format="[%(levelname)s] %(message)s",
-    level=VERBOSITY,
-    stream=sys.stdout
-)
+log = logging.getLogger(__name__)
+formatter = logging.Formatter("[%(levelname)s] %(message)s")
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(formatter)
+handler.setLevel(logging.DEBUG)
+log.addHandler(handler)
+log.setLevel(logging.INFO)
 
 
 # todo: rename. I didn't write this in the first place so idk what to call it
-def main2(sslcontext: ssl.SSLContext) -> int:
+def main2(args: argparse.Namespace, sslcontext: ssl.SSLContext) -> int:
     if MODFILELIST_PATH.is_file():
         with open(MODFILELIST_PATH, "r") as f:
             local_lines = f.readlines()
@@ -44,21 +42,21 @@ def main2(sslcontext: ssl.SSLContext) -> int:
 
     local_rev = int(local_lines[0].strip("\r\n"))
     net_rev = int(net_lines[0].strip("\r\n"))
-    if net_rev > local_rev or SKIPREV:
+    if net_rev > local_rev or args.skiprev:
         print(f"Found mod update (revision {local_rev} -> {net_rev}).")
-        if NOMOD is False:
+        if args.nomod is False:
             with open("modfilelist.txt", "w") as f:
                 f.writelines(net_lines)
         else:
             log.info("Update will not be saved as --nomod is set.")
-        update(net_lines[1:], sslcontext=sslcontext)
+        update(net_lines[1:], args=args, sslcontext=sslcontext)
         return 0
 
     print(f"Mod is up to date (revision {local_rev}).")
     return 0
 
 
-def update(filelines: list[str], sslcontext: ssl.SSLContext) -> int:
+def update(filelines: list[str], args: argparse.Namespace, sslcontext: ssl.SSLContext) -> int:
     not_ok = 0
     actually_changed_a_file = False
     for line in filelines:
@@ -86,7 +84,7 @@ def update(filelines: list[str], sslcontext: ssl.SSLContext) -> int:
             log.debug(f"MD5 download test: local '{local_md5}' vs net '{net_md5}'.")
             # if md5s match, don't download this file
             if local_md5 == net_md5:
-                if FORCE:
+                if args.force:
                     log.info(f"Forcing redownload of '{file_path}'.")
                 else:
                     log.debug(f"'{file_path}' skipped, unchanged from current.")
@@ -100,7 +98,7 @@ def update(filelines: list[str], sslcontext: ssl.SSLContext) -> int:
             dl_md5 = hashlib.md5(data).hexdigest()
             log.debug(f"MD5 verify test: downloaded '{dl_md5}' vs net '{net_md5}'.")
             if dl_md5 == net_md5:
-                if NOMOD is False:
+                if not args.nomod:
                     # ensure not read-only (only if exists)
                     if file_path.is_file():
                         perms = stat.S_IMODE(os.lstat(file_path).st_mode)
@@ -122,7 +120,7 @@ def update(filelines: list[str], sslcontext: ssl.SSLContext) -> int:
                     break
 
     if not actually_changed_a_file:
-        if NOMOD is False:  # kinda illogical with --nomod set, so ignore this case
+        if not args.nomod:  # kinda illogical with --nomod set, so ignore this case
             log.warning(f"No files were changed by this update. Either you made the update, or something's gone wrong.")
 
     return not_ok
@@ -153,33 +151,27 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def parse():
-    global FORCE, SKIPREV, NOMOD, VERBOSITY
-    parser = get_parser()
-    args = parser.parse_args()
-    FORCE = args.force
-    SKIPREV = args.skiprev or args.force
-    NOMOD = args.nomod
-    log_level_mapping = {
-        ("error", "e"): log.ERROR,
-        ("warning", "w"): log.WARNING,
-        ("info", "i"): log.INFO,
-        ("debug", "d", "verbose", "v"): log.DEBUG,
-    }
-    for choice, level in log_level_mapping.items():
-        if args.info in choice:
-            VERBOSITY = level
-            break
-
-
 def main():
     sslcontext = ssl.create_default_context()
     sslcontext.check_hostname = False
     sslcontext.verify_mode = ssl.VerifyMode.CERT_NONE
 
+    parser = get_parser()
+    args = parser.parse_args()
+    args.skiprev = args.skiprev or args.force
+    log_level_mapping = {
+        ("error", "e"): logging.ERROR,
+        ("warning", "w"): logging.WARNING,
+        ("info", "i"): logging.INFO,
+        ("debug", "d", "verbose", "v"): logging.DEBUG,
+    }
+    for choice, level in log_level_mapping.items():
+        if args.info in choice:
+            log.setLevel(level)
+            break
+
     try:
-        parse()
-        main2(sslcontext)
+        main2(args, sslcontext)
     except Exception as error:
         log.fatal("fuck it broke. press enter to close", exc_info=error)
         input()
