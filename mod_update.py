@@ -27,9 +27,13 @@ handler.setLevel(logging.DEBUG)
 log.addHandler(handler)
 log.setLevel(logging.INFO)
 
+sslcontext = ssl.create_default_context()
+sslcontext.check_hostname = False
+sslcontext.verify_mode = ssl.VerifyMode.CERT_NONE
+
 
 # todo: rename. I didn't write this in the first place so idk what to call it
-def main2(args: argparse.Namespace, sslcontext: ssl.SSLContext) -> int:
+def main2(args: argparse.Namespace) -> int:
     if MODFILELIST_PATH.is_file():
         with open(MODFILELIST_PATH, "r") as f:
             local_lines = f.readlines()
@@ -49,14 +53,14 @@ def main2(args: argparse.Namespace, sslcontext: ssl.SSLContext) -> int:
                 f.writelines(net_lines)
         else:
             log.info("Update will not be saved as --nomod is set.")
-        update(net_lines[1:], args=args, sslcontext=sslcontext)
+        update(net_lines[1:], args=args)
         return 0
 
     print(f"Mod is up to date (revision {local_rev}).")
     return 0
 
 
-def update(filelines: list[str], args: argparse.Namespace, sslcontext: ssl.SSLContext) -> int:
+def update(filelines: list[str], args: argparse.Namespace) -> int:
     not_ok = 0
     actually_changed_a_file = False
     for line in filelines:
@@ -152,10 +156,6 @@ def get_parser() -> argparse.ArgumentParser:
 
 
 def main():
-    sslcontext = ssl.create_default_context()
-    sslcontext.check_hostname = False
-    sslcontext.verify_mode = ssl.VerifyMode.CERT_NONE
-
     parser = get_parser()
     args = parser.parse_args()
     args.skiprev = args.skiprev or args.force
@@ -171,7 +171,7 @@ def main():
             break
 
     try:
-        main2(args, sslcontext)
+        main2(args)
     except Exception as error:
         log.fatal("fuck it broke. press enter to close", exc_info=error)
         input()
