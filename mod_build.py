@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 
-MOD_DIR = Path("mod")
+MOD_DIR = Path("mod/")
 MODFILELIST_PATH = MOD_DIR.joinpath("modfilelist.txt")
 MOD_FILES_PATH = Path("mod_files.txt")
 MOD_REVCOUNT_PATH = Path("mod_revcount.txt")

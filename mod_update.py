@@ -9,9 +9,9 @@ import shutil
 import ssl
 import stat
 import sys
-import traceback
 import urllib.request
 import logging as log
+from pathlib import Path
 
 BASEURL = "https://runciman.hacksoc.org/~/ddm/mod/"
 FILELIST = BASEURL+"modfilelist.txt"
@@ -19,6 +19,8 @@ VERBOSITY = log.INFO
 FORCE = False
 SKIPREV = False
 NOMOD = False
+MODFILELIST_PATH = Path("modfilelist.txt")
+BACKUP_DIR = Path("bak/")
 
 
 log.basicConfig(
@@ -35,9 +37,8 @@ sslcontext.verify_mode = ssl.VerifyMode.CERT_NONE
 
 
 def main() -> int:
-    local_lines = []
-    if os.path.isfile("modfilelist.txt"):
-        with open("modfilelist.txt", "r") as f:
+    if MODFILELIST_PATH.is_file():
+        with open(MODFILELIST_PATH, "r") as f:
             local_lines = f.readlines()
     else:
         log.debug("No local modfilelist, setting revision to 0.")
@@ -55,7 +56,7 @@ def main() -> int:
                 f.writelines(net_lines)
         else:
             log.info("Update will not be saved as --nomod is set.")
-        _ = update(net_lines[1:])
+        update(net_lines[1:])
         return 0
 
     print(f"Mod is up to date (revision {local_rev}).")
@@ -71,56 +72,57 @@ def update(filelines: str) -> int:
             continue
 
         x = line.split(" ")
-        filename = x[0]
+        file_path = Path(x[0])
         net_md5 = x[1].strip("\r\n")
 
-        if (not filename.startswith("mod")) and (not os.path.isfile(f"bak/{filename}")):
+        file_backup_path = BACKUP_DIR.joinpath(file_path)
+        if (not file_path.parents[0] == "mod") and (not file_backup_path.is_file()):
             # not backed up (and not mod framework), assume original and back it up
-            os.makedirs(os.path.dirname(f"bak/{filename}"), exist_ok=True)
-            shutil.copyfile(filename, f"bak/{filename}")
-            log.info(f"Made a backup of {filename}.")
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(file_path, file_backup_path)
+            log.info(f"Made a backup of {file_path}.")
         else:
             # get local md5
             local_md5 = "file doesn't exist"
-            if os.path.isfile(filename):
-                data = open(filename, "rb").read()
+            if file_path.is_file():
+                data = file_path.read_bytes()
                 local_md5 = hashlib.md5(data).hexdigest()
 
             log.debug(f"MD5 download test: local '{local_md5}' vs net '{net_md5}'.")
             # if md5s match, don't download this file
             if local_md5 == net_md5:
                 if FORCE:
-                    log.info(f"Forcing redownload of {filename}.")
+                    log.info(f"Forcing redownload of '{file_path}'.")
                 else:
-                    log.debug(f"'{filename}' skipped, unchanged from current.")
+                    log.debug(f"'{file_path}' skipped, unchanged from current.")
                     continue
 
         # file should be downloaded if we get here
         count = 0
         while True:
-            ret = urllib.request.urlopen(BASEURL+filename, context=sslcontext)
+            ret = urllib.request.urlopen(BASEURL+str(file_path), context=sslcontext)
             data: str = ret.read()
             dl_md5 = hashlib.md5(data).hexdigest()
             log.debug(f"MD5 verify test: downloaded '{dl_md5}' vs net '{net_md5}'.")
             if dl_md5 == net_md5:
                 if NOMOD is False:
                     # ensure not read-only (only if exists)
-                    if os.path.isfile(filename):
-                        perms = stat.S_IMODE(os.lstat(filename).st_mode)
-                        os.chmod(filename, perms | stat.S_IWRITE)
+                    if file_path.is_file():
+                        perms = stat.S_IMODE(os.lstat(file_path).st_mode)
+                        os.chmod(file_path, perms | stat.S_IWRITE)
 
-                    with open(filename, "wb") as f:
+                    with open(file_path, "wb") as f:
                         f.write(data)
-                    log.info(f"'{filename}' updated.")
+                    log.info(f"'{file_path}' updated.")
                 else:
-                    log.info(f"--nomod set: {filename} would've been updated.")
+                    log.info(f"--nomod set: '{file_path}' would've been updated.")
                 actually_changed_a_file = True
                 break
             else:
                 count += 1
-                log.debug(f"Validity check failed (file: {filename}, count: {count}).")
+                log.debug(f"Validity check failed (file: '{file_path}', count: {count}).")
                 if count > 3:
-                    log.warning(f"Validity check failed for '{filename}' after 3 attempts.")
+                    log.warning(f"Validity check failed for '{file_path}' after 3 attempts.")
                     not_ok = 1
                     break
 
@@ -178,8 +180,8 @@ def parse():
 if __name__ == "__main__":
     try:
         parse()
-        ret = main()
-    except:
-        traceback.print_exc()
-        input("fuck it broke. press enter to close")
-    exit()
+        main()
+    except Exception as error:
+        log.fatal("fuck it broke. press enter to close", exc_info=error)
+        input()
+    sys.exit()
