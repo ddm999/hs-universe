@@ -30,13 +30,8 @@ log.basicConfig(
 )
 
 
-# funny globals go brrr
-sslcontext = ssl.create_default_context()
-sslcontext.check_hostname = False
-sslcontext.verify_mode = ssl.VerifyMode.CERT_NONE
-
-
-def main() -> int:
+# todo: rename. I didn't write this in the first place so idk what to call it
+def main2(sslcontext: ssl.SSLContext) -> int:
     if MODFILELIST_PATH.is_file():
         with open(MODFILELIST_PATH, "r") as f:
             local_lines = f.readlines()
@@ -56,14 +51,14 @@ def main() -> int:
                 f.writelines(net_lines)
         else:
             log.info("Update will not be saved as --nomod is set.")
-        update(net_lines[1:])
+        update(net_lines[1:], sslcontext=sslcontext)
         return 0
 
     print(f"Mod is up to date (revision {local_rev}).")
     return 0
 
 
-def update(filelines: list[str]) -> int:
+def update(filelines: list[str], sslcontext: ssl.SSLContext) -> int:
     not_ok = 0
     actually_changed_a_file = False
     for line in filelines:
@@ -177,11 +172,19 @@ def parse():
             break
 
 
-if __name__ == "__main__":
+def main():
+    sslcontext = ssl.create_default_context()
+    sslcontext.check_hostname = False
+    sslcontext.verify_mode = ssl.VerifyMode.CERT_NONE
+
     try:
         parse()
-        main()
+        main2(sslcontext)
     except Exception as error:
         log.fatal("fuck it broke. press enter to close", exc_info=error)
         input()
     sys.exit()
+
+
+if __name__ == "__main__":
+    main()
