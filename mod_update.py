@@ -131,44 +131,48 @@ def update(filelines: str) -> int:
     return not_ok
 
 
-parser = argparse.ArgumentParser(
-    description="Updates HackSoc Universe."
-)
-parser.add_argument(
-    '--info',
-    choices=['error', 'e', 'warning', 'w', 'info', 'i', 'verbose', 'v', 'debug', 'd'],
-    help="set information level", default='info'
-)
-parser.add_argument(
-    '--nomod', action='store_true',
-    help="do not modify any files"
-)
-parser.add_argument(
-    '--skiprev', action='store_true',
-    help="bypass revision number check"
-)
-parser.add_argument(
-    '--force', action='store_true',
-    help="force redownload all files (implies --skiprev)"
-)
+def get_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Updates HackSoc Universe."
+    )
+    parser.add_argument(
+        '--info',
+        choices=['error', 'e', 'warning', 'w', 'info', 'i', 'verbose', 'v', 'debug', 'd'],
+        help="set information level", default='info'
+    )
+    parser.add_argument(
+        '--nomod', action='store_true',
+        help="do not modify any files"
+    )
+    parser.add_argument(
+        '--skiprev', action='store_true',
+        help="bypass revision number check"
+    )
+    parser.add_argument(
+        '--force', action='store_true',
+        help="force redownload all files (implies --skiprev)"
+    )
+
+    return parser
 
 
 def parse():
     global FORCE, SKIPREV, NOMOD, VERBOSITY
+    parser = get_parser()
     args = parser.parse_args()
     FORCE = args.force
     SKIPREV = args.skiprev or args.force
     NOMOD = args.nomod
-    if args.info == "error" or args.info == "e":
-        VERBOSITY = 1
-    elif args.info == "warning" or args.info == "w":
-        VERBOSITY = 2
-    elif args.info == "info" or args.info == "i":
-        VERBOSITY = 3
-    elif args.info == "verbose" or args.info == "v":
-        VERBOSITY = 4
-    elif args.info == "debug" or args.info == "d":
-        VERBOSITY = 5
+    log_level_mapping = {
+        ("error", "e"): log.ERROR,
+        ("warning", "w"): log.WARNING,
+        ("info", "i"): log.INFO,
+        ("debug", "d", "verbose", "v"): log.DEBUG,
+    }
+    for choice, level in log_level_mapping.items():
+        if args.info in choice:
+            VERBOSITY = level
+            break
 
 
 if __name__ == "__main__":
