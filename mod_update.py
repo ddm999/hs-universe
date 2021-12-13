@@ -18,32 +18,34 @@ FORCE = False
 SKIPREV = False
 NOMOD = False
 
-### helpers
-def fatal(text : str):
+
+# helpers
+def fatal(text: str):
     print(f"[ERR] {text}")
     exit(1)
-def err(text : str):
+def err(text: str):
     if VERBOSITY >= 1:
         print(f"[ERR] {text}")
-def warn(text : str):
+def warn(text: str):
     if VERBOSITY >= 2:
         print(f"[WRN] {text}")
-def info(text : str):
+def info(text: str):
     if VERBOSITY >= 3:
         print(f"[INF] {text}")
-def verbose(text : str):
+def verbose(text: str):
     if VERBOSITY >= 4:
         print(f"[INF] {text}")
-def debug(text : str):
+def debug(text: str):
     if VERBOSITY >= 5:
         print(f"[DBG] {text}")
 
-### funny globals go brrr
+
+# funny globals go brrr
 sslcontext = ssl.create_default_context()
 sslcontext.check_hostname = False
 sslcontext.verify_mode = ssl.VerifyMode.CERT_NONE
 
-### main
+
 def main() -> int:
     local_lines = []
     if os.path.isfile("modfilelist.txt"):
@@ -51,7 +53,7 @@ def main() -> int:
             local_lines = f.readlines()
     else:
         debug("No local modfilelist, setting revision to 0.")
-        local_lines = ["0",""]
+        local_lines = ["0", ""]
 
     ret = urllib.request.urlopen(FILELIST, context=sslcontext)
     net_lines: list[str] = [line+"\n" for line in ret.read().decode("utf-8").split("\n")]
@@ -71,7 +73,8 @@ def main() -> int:
     print(f"Mod is up to date (revision {local_rev}).")
     return 0
 
-def update(filelines : str) -> int:
+
+def update(filelines: str) -> int:
     not_ok = 0
     actually_changed_a_file = False
     for line in filelines:
@@ -108,7 +111,7 @@ def update(filelines : str) -> int:
         count = 0
         while True:
             ret = urllib.request.urlopen(BASEURL+filename, context=sslcontext)
-            data = ret.read() # type: str
+            data: str = ret.read()
             dl_md5 = hashlib.md5(data).hexdigest()
             debug(f"MD5 verify test: downloaded '{dl_md5}' vs net '{net_md5}'.")
             if dl_md5 == net_md5:
@@ -134,23 +137,33 @@ def update(filelines : str) -> int:
                     break
 
     if not actually_changed_a_file:
-        if NOMOD is False: # kinda illogical with --nomod set, so ignore this case
+        if NOMOD is False:  # kinda illogical with --nomod set, so ignore this case
             warn(f"No files were changed by this update. Either you made the update, or something's gone wrong.")
 
     return not_ok
 
+
 parser = argparse.ArgumentParser(
     description="Updates HackSoc Universe."
 )
-parser.add_argument('--info',
-    choices=['error','e','warning','w','info','i','verbose','v','debug','d'],
-    help="set information level", default='info')
-parser.add_argument('--nomod', action='store_true',
-    help="do not modify any files")
-parser.add_argument('--skiprev', action='store_true',
-    help="bypass revision number check")
-parser.add_argument('--force', action='store_true',
-    help="force redownload all files (implies --skiprev)")
+parser.add_argument(
+    '--info',
+    choices=['error', 'e', 'warning', 'w', 'info', 'i', 'verbose', 'v', 'debug', 'd'],
+    help="set information level", default='info'
+)
+parser.add_argument(
+    '--nomod', action='store_true',
+    help="do not modify any files"
+)
+parser.add_argument(
+    '--skiprev', action='store_true',
+    help="bypass revision number check"
+)
+parser.add_argument(
+    '--force', action='store_true',
+    help="force redownload all files (implies --skiprev)"
+)
+
 
 def parse():
     global FORCE, SKIPREV, NOMOD, VERBOSITY
@@ -168,6 +181,7 @@ def parse():
         VERBOSITY = 4
     elif args.info == "debug" or args.info == "d":
         VERBOSITY = 5
+
 
 if __name__ == "__main__":
     try:
