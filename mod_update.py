@@ -8,36 +8,24 @@ import os
 import shutil
 import ssl
 import stat
+import sys
 import traceback
 import urllib.request
+import logging as log
 
 BASEURL = "https://runciman.hacksoc.org/~/ddm/mod/"
 FILELIST = BASEURL+"modfilelist.txt"
-VERBOSITY = 3
+VERBOSITY = log.INFO
 FORCE = False
 SKIPREV = False
 NOMOD = False
 
 
-# helpers
-def fatal(text: str):
-    print(f"[ERR] {text}")
-    exit(1)
-def err(text: str):
-    if VERBOSITY >= 1:
-        print(f"[ERR] {text}")
-def warn(text: str):
-    if VERBOSITY >= 2:
-        print(f"[WRN] {text}")
-def info(text: str):
-    if VERBOSITY >= 3:
-        print(f"[INF] {text}")
-def verbose(text: str):
-    if VERBOSITY >= 4:
-        print(f"[INF] {text}")
-def debug(text: str):
-    if VERBOSITY >= 5:
-        print(f"[DBG] {text}")
+log.basicConfig(
+    format="[%(levelname)s] %(message)s",
+    level=VERBOSITY,
+    stream=sys.stdout
+)
 
 
 # funny globals go brrr
@@ -52,7 +40,7 @@ def main() -> int:
         with open("modfilelist.txt", "r") as f:
             local_lines = f.readlines()
     else:
-        debug("No local modfilelist, setting revision to 0.")
+        log.debug("No local modfilelist, setting revision to 0.")
         local_lines = ["0", ""]
 
     ret = urllib.request.urlopen(FILELIST, context=sslcontext)
@@ -66,7 +54,7 @@ def main() -> int:
             with open("modfilelist.txt", "w") as f:
                 f.writelines(net_lines)
         else:
-            info("Update will not be saved as --nomod is set.")
+            log.info("Update will not be saved as --nomod is set.")
         _ = update(net_lines[1:])
         return 0
 
@@ -90,7 +78,7 @@ def update(filelines: str) -> int:
             # not backed up (and not mod framework), assume original and back it up
             os.makedirs(os.path.dirname(f"bak/{filename}"), exist_ok=True)
             shutil.copyfile(filename, f"bak/{filename}")
-            info(f"Made a backup of {filename}.")
+            log.info(f"Made a backup of {filename}.")
         else:
             # get local md5
             local_md5 = "file doesn't exist"
@@ -98,13 +86,13 @@ def update(filelines: str) -> int:
                 data = open(filename, "rb").read()
                 local_md5 = hashlib.md5(data).hexdigest()
 
-            debug(f"MD5 download test: local '{local_md5}' vs net '{net_md5}'.")
+            log.debug(f"MD5 download test: local '{local_md5}' vs net '{net_md5}'.")
             # if md5s match, don't download this file
             if local_md5 == net_md5:
                 if FORCE:
-                    info(f"Forcing redownload of {filename}.")
+                    log.info(f"Forcing redownload of {filename}.")
                 else:
-                    verbose(f"'{filename}' skipped, unchanged from current.")
+                    log.debug(f"'{filename}' skipped, unchanged from current.")
                     continue
 
         # file should be downloaded if we get here
@@ -113,7 +101,7 @@ def update(filelines: str) -> int:
             ret = urllib.request.urlopen(BASEURL+filename, context=sslcontext)
             data: str = ret.read()
             dl_md5 = hashlib.md5(data).hexdigest()
-            debug(f"MD5 verify test: downloaded '{dl_md5}' vs net '{net_md5}'.")
+            log.debug(f"MD5 verify test: downloaded '{dl_md5}' vs net '{net_md5}'.")
             if dl_md5 == net_md5:
                 if NOMOD is False:
                     # ensure not read-only (only if exists)
@@ -123,22 +111,22 @@ def update(filelines: str) -> int:
 
                     with open(filename, "wb") as f:
                         f.write(data)
-                    info(f"'{filename}' updated.")
+                    log.info(f"'{filename}' updated.")
                 else:
-                    info(f"--nomod set: {filename} would've been updated.")
+                    log.info(f"--nomod set: {filename} would've been updated.")
                 actually_changed_a_file = True
                 break
             else:
                 count += 1
-                debug(f"Validity check failed (file: {filename}, count: {count}).")
+                log.debug(f"Validity check failed (file: {filename}, count: {count}).")
                 if count > 3:
-                    warn(f"Validity check failed for '{filename}' after 3 attempts.")
+                    log.warning(f"Validity check failed for '{filename}' after 3 attempts.")
                     not_ok = 1
                     break
 
     if not actually_changed_a_file:
         if NOMOD is False:  # kinda illogical with --nomod set, so ignore this case
-            warn(f"No files were changed by this update. Either you made the update, or something's gone wrong.")
+            log.warning(f"No files were changed by this update. Either you made the update, or something's gone wrong.")
 
     return not_ok
 
