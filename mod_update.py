@@ -63,7 +63,7 @@ def main() -> int:
     return 0
 
 
-def update(filelines: str) -> int:
+def update(filelines: list[str]) -> int:
     not_ok = 0
     actually_changed_a_file = False
     for line in filelines:
@@ -101,7 +101,7 @@ def update(filelines: str) -> int:
         count = 0
         while True:
             ret = urllib.request.urlopen(BASEURL+str(file_path), context=sslcontext)
-            data: str = ret.read()
+            data = ret.read()
             dl_md5 = hashlib.md5(data).hexdigest()
             log.debug(f"MD5 verify test: downloaded '{dl_md5}' vs net '{net_md5}'.")
             if dl_md5 == net_md5:
