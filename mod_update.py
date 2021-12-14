@@ -32,8 +32,7 @@ sslcontext.check_hostname = False
 sslcontext.verify_mode = ssl.VerifyMode.CERT_NONE
 
 
-# todo: rename. I didn't write this in the first place so idk what to call it
-def main2(args: argparse.Namespace) -> int:
+def check_for_update(args: argparse.Namespace) -> int:
     if MODFILELIST_PATH.is_file():
         with open(MODFILELIST_PATH, "r") as f:
             local_lines = f.readlines()
@@ -91,7 +90,7 @@ def update(filelines: list[str], args: argparse.Namespace) -> int:
                 if args.force:
                     log.info(f"Forcing redownload of '{file_path}'.")
                 else:
-                    log.debug(f"'{file_path}' skipped, unchanged from current.")
+                    log.info(f"'{file_path}' skipped, unchanged from current.")
                     continue
 
         # file should be downloaded if we get here
@@ -136,7 +135,7 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         '--info',
-        choices=['error', 'e', 'warning', 'w', 'info', 'i', 'verbose', 'v', 'debug', 'd'],
+        choices=['error', 'e', 'warning', 'w', 'info', 'i', 'debug', 'd'],
         help="set information level", default='info'
     )
     parser.add_argument(
@@ -163,7 +162,7 @@ def main():
         ("error", "e"): logging.ERROR,
         ("warning", "w"): logging.WARNING,
         ("info", "i"): logging.INFO,
-        ("debug", "d", "verbose", "v"): logging.DEBUG,
+        ("debug", "d"): logging.DEBUG,
     }
     for choice, level in log_level_mapping.items():
         if args.info in choice:
@@ -171,9 +170,9 @@ def main():
             break
 
     try:
-        main2(args)
+        check_for_update(args)
     except Exception as error:
-        log.fatal("fuck it broke. press enter to close", exc_info=error)
+        log.critical("fuck it broke. press enter to close", exc_info=error)
         input()
     sys.exit()
 
