@@ -96,7 +96,7 @@ def update(filelines: list[str], args: argparse.Namespace) -> int:
         # file should be downloaded if we get here
         count = 0
         while True:
-            ret = urllib.request.urlopen(BASEURL+str(file_path), context=sslcontext)
+            ret = urllib.request.urlopen(BASEURL+file_path.as_posix(), context=sslcontext)
             data = ret.read()
             dl_md5 = hashlib.md5(data).hexdigest()
             log.debug(f"MD5 verify test: downloaded '{dl_md5}' vs net '{net_md5}'.")
@@ -174,7 +174,6 @@ def main():
     except Exception as error:
         log.critical("fuck it broke. press enter to close", exc_info=error)
         input()
-    sys.exit()
 
 
 if __name__ == "__main__":
