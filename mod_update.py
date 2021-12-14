@@ -170,7 +170,11 @@ def main():
             break
 
     try:
+        # set the cwd to the script dir - on windows with windows store python cwd is system32 for some reason
+	os.chdir(Path(sys.argv[0]).resolve().parent)
+
         check_for_update(args)
+        input("press enter to exit")
     except Exception as error:
         log.critical("fuck it broke. press enter to close", exc_info=error)
         input()
