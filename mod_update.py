@@ -72,9 +72,9 @@ def update(filelines: list[str], args: argparse.Namespace) -> int:
         net_md5 = x[1].strip("\r\n")
 
         file_backup_path = BACKUP_DIR.joinpath(file_path)
-        if (not file_path.parents[0] == "mod") and (not file_backup_path.is_file()):
+        if (not file_path.parents[-2] == "mod") and (not file_backup_path.is_file()):
             # not backed up (and not mod framework), assume original and back it up
-            file_path.parent.mkdir(parents=True, exist_ok=True)
+            file_backup_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(file_path, file_backup_path)
             log.info(f"Made a backup of {file_path}.")
         else:
