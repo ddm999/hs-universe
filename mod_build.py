@@ -1,18 +1,25 @@
 #!/usr/bin/python3
-import os, shutil, hashlib, subprocess
+
+import hashlib
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+
+MOD_DIR = Path("mod/")
+MODFILELIST_PATH = MOD_DIR.joinpath("modfilelist.txt")
+MOD_FILES_PATH = Path("mod_files.txt")
+MOD_REVCOUNT_PATH = Path("mod_revcount.txt")
+
 
 def main() -> int:
     # remove old folder
-    if os.path.exists("mod"):
-        while True:
-            try:
-                shutil.rmtree("mod")
-                break
-            except:
-                continue
+    if MOD_DIR.is_dir():
+        shutil.rmtree(MOD_DIR, ignore_errors=True)
 
     md5s = {}
-    with open("mod_files.txt", "r") as f:
+    with open(MOD_FILES_PATH, "r") as f:
         lines = f.readlines()
 
         for line in lines:
@@ -24,22 +31,23 @@ def main() -> int:
                 continue
 
             # copy to mod folder
-            os.makedirs(os.path.dirname(f"mod/{line}"), exist_ok=True)
-            shutil.copyfile(line, f"mod/{line}")
+            line_path = MOD_DIR.joinpath(line)
+            line_path.resolve().parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(line, line_path)
 
             # add md5 to dict
-            data = open(f"mod/{line}", "rb").read()
+            data = line_path.read_bytes()
             md5 = hashlib.md5(data).hexdigest()
             md5s[line] = md5
 
     # find revision number
     revision = 1
-    if os.path.isfile("mod_revcount.txt"):
-        with open("mod_revcount.txt", "r") as f:
+    if MOD_REVCOUNT_PATH.is_file():
+        with open(MOD_REVCOUNT_PATH, "r") as f:
             revision = int(f.readline()) + 1
     
     # save revision number
-    with open("mod_revcount.txt", "w") as f:
+    with open(MOD_REVCOUNT_PATH, "w") as f:
         f.write(f"{revision}\n")
 
     # write filelist
@@ -50,9 +58,10 @@ def main() -> int:
 
     print(f"Updated mod to revision {revision}.")
     print(f"Press CTRL+C to skip upload.")
-    subprocess.run("scp -r mod ddm@runciman.hacksoc.org:~/private_html")
+    subprocess.run("scp -r mod ddm@runciman.hacksoc.org:~/private_html", stdout=sys.stdout, stderr=sys.stderr)
 
     return 0
 
+
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

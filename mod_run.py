@@ -1,6 +1,9 @@
 #!/usr/bin/python3
-import os, subprocess
+
+import subprocess
+from pathlib import Path
+
 import mod_update
 
 mod_update.main()
-subprocess.Popen(os.getcwd()+"/legouniverse.exe")
+subprocess.Popen(Path.cwd().joinpath("legouniverse.exe"))
