@@ -47,12 +47,12 @@ def check_for_update(args: argparse.Namespace) -> int:
     net_rev = int(net_lines[0].strip("\r\n"))
     if net_rev > local_rev or args.skiprev:
         print(f"Found mod update (revision {local_rev} -> {net_rev}).")
+        update(net_lines[1:], args=args)
         if args.nomod is False:
             with open("modfilelist.txt", "w") as f:
                 f.writelines(net_lines)
         else:
             log.info("Update will not be saved as --nomod is set.")
-        update(net_lines[1:], args=args)
         return 0
 
     print(f"Mod is up to date (revision {local_rev}).")
@@ -72,7 +72,7 @@ def update(filelines: list[str], args: argparse.Namespace) -> int:
         net_md5 = x[1].strip("\r\n")
 
         file_backup_path = BACKUP_DIR.joinpath(file_path)
-        if (not file_path.parents[-2] == "mod") and (not file_backup_path.is_file()):
+        if (not file_path.name.startswith("mod")) and (not file_backup_path.is_file()):
             # not backed up (and not mod framework), assume original and back it up
             file_backup_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(file_path, file_backup_path)
