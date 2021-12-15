@@ -9,6 +9,15 @@ boot.cfg
 locale/locale.xml
 res/license/eula.txt
 res/license/tos.txt
+res/license/_loc/de_de/eula.txt
+res/license/_loc/de_de/tos.txt
+res/license/_loc/en_gb/eula.txt
+res/license/_loc/en_gb/tos.txt
+res/chatminus_en_us.txt
+res/logo.bmp
+
+# the exe (link changes)
+legouniverse.exe
 
 # scripts
 res/scripts/ai/minigame/survival/l_zone_survival_client.lua
@@ -18,3 +27,5 @@ res/textures/minifig/minifigtorsos/torsos_rewards_bradfordrant_i5.dds
 res/textures/minifig/minifigtorsos/torsos_rewards_minifigarm_i5.dds
 res/textures/ui/inventory/torsos/bradford_rant.dds
 res/textures/ui/inventory/torsos/reward/m73200_minifigarm.dds
+res/mesh/miscellaneous/newlogo.dds
+res/ui/frontend/login_combined_i34.dds
