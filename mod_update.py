@@ -10,6 +10,7 @@ import shutil
 import ssl
 import stat
 import sys
+import time
 import urllib.request
 from pathlib import Path
 
@@ -90,7 +91,7 @@ def update(filelines: list[str], args: argparse.Namespace) -> int:
                 if args.force:
                     log.info(f"Forcing redownload of '{file_path}'.")
                 else:
-                    log.info(f"'{file_path}' skipped, unchanged from current.")
+                    log.debug(f"'{file_path}' skipped, unchanged from current.")
                     continue
 
         # file should be downloaded if we get here
@@ -111,7 +112,7 @@ def update(filelines: list[str], args: argparse.Namespace) -> int:
                         f.write(data)
                     log.info(f"'{file_path}' updated.")
                 else:
-                    log.info(f"--nomod set: '{file_path}' would've been updated.")
+                    log.info(f"'{file_path}' would've been updated.")
                 actually_changed_a_file = True
                 break
             else:
@@ -150,11 +151,15 @@ def get_parser() -> argparse.ArgumentParser:
         '--force', action='store_true',
         help="force redownload all files (implies --skiprev)"
     )
+    parser.add_argument(
+        '--nopause', action='store_true',
+        help="don't wait for input if successful (instead delays exit by 2s)"
+    )
 
     return parser
 
 
-def main():
+def main(from_mod_run = False):
     parser = get_parser()
     args = parser.parse_args()
     args.skiprev = args.skiprev or args.force
@@ -168,17 +173,24 @@ def main():
         if args.info in choice:
             log.setLevel(level)
             break
+    
+    if from_mod_run:
+        args.nopause = True
 
     try:
-        # set the cwd to the script dir - on windows with windows store python cwd is system32 for some reason
-        os.chdir(Path(sys.argv[0]).resolve().parent)
-
         check_for_update(args)
-        input("press enter to exit")
+        if not args.nopause:
+            input(">>> press enter to exit <<<")
+        else:
+            time.sleep(2)
     except Exception as error:
-        log.critical("fuck it broke. press enter to close", exc_info=error)
-        input()
+        log.critical("fuck it broke", exc_info=error)
+        input(">>> press enter to exit <<<")
+        sys.exit()
 
 
 if __name__ == "__main__":
+    # set the cwd to the script dir - on windows with windows store python cwd is system32 for some reason
+    os.chdir(Path(sys.argv[0]).resolve().parent)
+
     main()
